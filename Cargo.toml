@@ -1,0 +1,18 @@
+[package]
+name = "audium"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cpal = "0.15.3"
+rfd = "0.15.1"
+
+[profile.release]
+strip = true
+opt-level = "s" # change this to z if you want to make this lighter (but less performant), or 3 if you somehow need performance on an audio player.
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+overflow-checks = false
+incremental = false
