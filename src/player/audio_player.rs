@@ -27,24 +27,29 @@ impl AudioPlayer {
     }
 
     pub fn play_file(&mut self, path: PathBuf) -> Result<(), AudioPlayerError> {
-       self.current_file_name = path.file_stem()
+    self.current_file_name = path.file_stem()
         .and_then(|os_str| os_str.to_os_string().into_string().ok())
-        .map(Some) // Envolva o valor em Some
+        .map(Some)
         .ok_or(AudioPlayerError::InvalidFileName)?;
 
-        let file_bytes = fs::read(&path).map_err(AudioPlayerError::IoError)?;
+    let file_bytes = fs::read(&path).map_err(AudioPlayerError::IoError)?;
 
-        let stream_handler = match path.extension().and_then(|ext| ext.to_str()) {
-            Some("wav") | Some("wave") => wav::stream_from_wav_file(&file_bytes)?,
-            _ => return Err(AudioPlayerError::UnsupportedFileFormat),
-        };
+    let stream_handler = match path.extension().and_then(|ext| ext.to_str()) {
+        Some("wav") | Some("wave") => {
+            let samples = wav::stream_from_wav_file(&file_bytes)?;
+            StreamHandler::from_samples(samples)?
+        },
+        _ => return Err(AudioPlayerError::UnsupportedFileFormat),
+    };
 
-        stream_handler.play();
-        self.stream_handler = Some(stream_handler);
-        self.state = State::Playing;
+    stream_handler.play();
+    self.stream_handler = Some(stream_handler);
+    self.state = State::Playing;
 
-        Ok(())
+    Ok(())
+
     }
+ 
 
     pub fn toggle_playing(&mut self) {
         if let Some(stream_handler) = &self.stream_handler {

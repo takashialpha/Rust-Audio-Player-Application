@@ -52,24 +52,35 @@ impl StreamHandler {
     }
 }
 
-fn build_stream<T, O>(device: Device, config: StreamConfig, audio_buffer: Vec<T>, cursor: Arc<AtomicUsize>) -> Stream
+fn build_stream<T, O>(
+    device: Device,
+    config: StreamConfig,
+    audio_buffer: Vec<T>,
+    cursor: Arc<AtomicUsize>,
+) -> Stream
 where
+    O: cpal::SizedSample + cpal::Sample,
     T: cpal::Sample + Send + 'static,
-    O: cpal::SizedSample + cpal::FromSample<T>,
 {
     let err_fn = |err| eprintln!("Error on audio stream: {}", err);
 
     let write_output = move |data: &mut [O], _: &cpal::OutputCallbackInfo| {
         for sample in data.iter_mut() {
             let index = cursor.fetch_add(1, Ordering::Relaxed);
-            *sample = if index < audio_buffer.len() {
-                audio_buffer[index].to_sample()
+            if index < audio_buffer.len() {
+                *sample = if std::any::TypeId::of::<O>() == std::any::TypeId::of::<i16>() {
+                    audio_buffer[index].to_i16() as O
+                } else if std::any::TypeId::of::<O>() == std::any::TypeId::of::<u8>() {
+                    audio_buffer[index].to_u8() as O
+                } else {
+                    cpal::Sample::EQUILIBRIUM
+                };
             } else {
-                cpal::Sample::EQUILIBRIUM
-            };
+                *sample = cpal::Sample::EQUILIBRIUM;
+            }
         }
     };
 
-    device.build_output_stream(&config, write_output, err_fn).expect("Failed to build output stream")
+    device.build_output_stream(&config, write_output, err_fn, None).expect("Failed to build output stream")
 }
 
