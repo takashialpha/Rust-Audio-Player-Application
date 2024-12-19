@@ -13,7 +13,7 @@ pub struct StreamHandler {
 impl StreamHandler {
     pub fn from_samples<T>(samples: Vec<T>) -> Result<Self, AudioPlayerError>
     where
-        T: cpal::Sample + Send + 'static,
+        T: cpal::Sample + Send + 'static, // Ensure T implements cpal::Sample
     {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(AudioPlayerError::StreamError("No output device available".to_string()))?;
@@ -47,6 +47,13 @@ impl StreamHandler {
         self.stream.pause().expect("Failed to pause stream");
     }
 
+    // Restart the stream
+    pub fn restart(&self) {
+        self.stream.pause().expect("Failed to pause stream");
+        self.cursor.store(0, Ordering::Relaxed); // Reset the cursor
+        self.stream.play().expect("Failed to restart stream");
+    }
+
     pub fn progress(&self) -> f32 {
         self.cursor.load(Ordering::Relaxed) as f32 / self.total_samples as f32
     }
@@ -60,7 +67,7 @@ fn build_stream<T, O>(
 ) -> Stream
 where
     O: cpal::SizedSample + cpal::Sample,
-    T: cpal::Sample + Send + 'static,
+    T: cpal::Sample + Send + 'static, // Ensure T implements cpal::Sample
 {
     let err_fn = |err| eprintln!("Error on audio stream: {}", err);
 
@@ -68,10 +75,13 @@ where
         for sample in data.iter_mut() {
             let index = cursor.fetch_add(1, Ordering::Relaxed);
             if index < audio_buffer.len() {
+                // Convert sample to f32 if T implements cpal::Sample
+                let sample_f32 = audio_buffer[index].to_f32();
+                
                 *sample = if std::any::TypeId::of::<O>() == std::any::TypeId::of::<i16>() {
-                    audio_buffer[index].to_i16() as O
+                    sample_f32.round() as i16 as O
                 } else if std::any::TypeId::of::<O>() == std::any::TypeId::of::<u8>() {
-                    audio_buffer[index].to_u8() as O
+                    (sample_f32.round() as u8) as O
                 } else {
                     cpal::Sample::EQUILIBRIUM
                 };
