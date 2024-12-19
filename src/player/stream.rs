@@ -13,13 +13,14 @@ pub struct StreamHandler {
 impl StreamHandler {
     pub fn from_samples<T>(samples: Vec<T>) -> Result<Self, AudioPlayerError>
     where
-        T: cpal::Sample + Send + 'static, // Ensure T implements cpal::Sample
+        T: cpal::Sample + Send + 'static,
     {
         let host = cpal::default_host();
-        let device = host.default_output_device().ok_or(AudioPlayerError::StreamError("No output device available".to_string()))?;
-        let supported_config = device.default_output_config().map_err(|_| AudioPlayerError::StreamError("Error querying configs".to_string()))?;
+        let device = host.default_output_device()
+            .ok_or(AudioPlayerError::StreamError("No output device available".to_string()))?;
+        let supported_config = device.default_output_config()
+            .map_err(|_| AudioPlayerError::StreamError("Error querying configs".to_string()))?;
         let config = supported_config.config();
-
         let total_samples = samples.len();
         let cursor = Arc::new(AtomicUsize::new(0));
         let stream_cursor = Arc::clone(&cursor);
@@ -31,7 +32,6 @@ impl StreamHandler {
         };
 
         stream.play().map_err(|_| AudioPlayerError::StreamError("Failed to start the stream".to_string()))?;
-
         Ok(Self {
             stream,
             total_samples,
@@ -47,10 +47,9 @@ impl StreamHandler {
         self.stream.pause().expect("Failed to pause stream");
     }
 
-    // Restart the stream
     pub fn restart(&self) {
         self.stream.pause().expect("Failed to pause stream");
-        self.cursor.store(0, Ordering::Relaxed); // Reset the cursor
+        self.cursor.store(0, Ordering::Relaxed);
         self.stream.play().expect("Failed to restart stream");
     }
 
@@ -66,31 +65,23 @@ fn build_stream<T, O>(
     cursor: Arc<AtomicUsize>,
 ) -> Stream
 where
-    O: cpal::SizedSample + cpal::Sample,
-    T: cpal::Sample + Send + 'static, // Ensure T implements cpal::Sample
+    O: cpal::Sample + cpal::SizedSample,
+    T: cpal::Sample + Send + 'static,
 {
     let err_fn = |err| eprintln!("Error on audio stream: {}", err);
-
+    
     let write_output = move |data: &mut [O], _: &cpal::OutputCallbackInfo| {
         for sample in data.iter_mut() {
             let index = cursor.fetch_add(1, Ordering::Relaxed);
             if index < audio_buffer.len() {
-                // Convert sample to f32 if T implements cpal::Sample
-                let sample_f32 = audio_buffer[index].to_f32();
-                
-                *sample = if std::any::TypeId::of::<O>() == std::any::TypeId::of::<i16>() {
-                    sample_f32.round() as i16 as O
-                } else if std::any::TypeId::of::<O>() == std::any::TypeId::of::<u8>() {
-                    (sample_f32.round() as u8) as O
-                } else {
-                    cpal::Sample::EQUILIBRIUM
-                };
+                *sample = O::from_sample(audio_buffer[index]);
             } else {
-                *sample = cpal::Sample::EQUILIBRIUM;
+                *sample = O::EQUILIBRIUM;
             }
         }
     };
 
-    device.build_output_stream(&config, write_output, err_fn, None).expect("Failed to build output stream")
+    device.build_output_stream(&config, write_output, err_fn, None)
+        .expect("Failed to build output stream")
 }
 
