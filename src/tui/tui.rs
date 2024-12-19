@@ -4,14 +4,15 @@ use ratatui::{
     layout::{Layout, Constraint, Direction},
     terminal::Terminal,
 };
+
 use crossterm::{
-    ExecutableCommand, event::{self, KeyCode, KeyEvent}, terminal::{self, ClearType},
-    cursor, execute, event::Event,
+    event::{self, Event, KeyCode, KeyEvent},
+    cursor, execute,
 };
-use std::io::{self, Write};
+
+use std::io;
 
 use crate::player::audio_player::AudioPlayer;
-use crate::player::stream::StreamHandler;
 
 pub struct Tui {
     player: AudioPlayer,
@@ -27,19 +28,24 @@ impl Tui {
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
 
-        terminal.clear(ClearType::All)?;
+        terminal.clear()?;
         execute!(terminal.backend_mut(), cursor::Hide)?;
 
         loop {
             terminal.draw(|f| {
-                let size = f.size();
-                let block = Block::default().title("Audio Player").borders(Borders::ALL);
-                f.render_widget(block, size);
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
+                    .split(f.size());
 
+                let block = Block::default().title("Audio Player").borders(Borders::ALL);
+                f.render_widget(block, chunks[0]);
+
+                // Display Play/Pause button text
                 let play_pause_button = self.player.pause_or_play_button_text();
                 let paragraph = Paragraph::new(play_pause_button)
                     .block(Block::default().title("Control").borders(Borders::ALL));
-                f.render_widget(paragraph, size);
+                f.render_widget(paragraph, chunks[1]);
             })?;
 
             if let Event::Key(KeyEvent { code, .. }) = event::read()? {
@@ -53,7 +59,7 @@ impl Tui {
         }
 
         execute!(terminal.backend_mut(), cursor::Show)?;
-        terminal.clear(ClearType::All)?;
+        terminal.clear()?;
         Ok(())
     }
 }

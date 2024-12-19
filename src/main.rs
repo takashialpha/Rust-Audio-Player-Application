@@ -1,18 +1,19 @@
 mod player;
 mod tui;
+mod error;
 
 use player::audio_player::AudioPlayer;
 use tui::tui::Tui;
 use std::path::PathBuf;
 
 fn main() {
-    let player = AudioPlayer::new();
+    let mut player = AudioPlayer::new();
 
-    // Here you can provide the audio file path to the player
     let path = PathBuf::from("path/to/your/audio.wav");
-    player.play_file(path);
+    if let Err(e) = player.play_file(path) {
+        eprintln!("Error playing file: {}", e);
+    }
 
-    // Start the TUI interface
     let mut tui = Tui::new(player);
     if let Err(e) = tui.run() {
         eprintln!("Error running the TUI: {}", e);

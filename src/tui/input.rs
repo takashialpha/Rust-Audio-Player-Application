@@ -1,4 +1,4 @@
-use crossterm::event::{self, KeyCode, KeyEvent};
+use crossterm::event::{self, KeyEvent};
 
 pub fn capture_input() -> Option<KeyEvent> {
     if let Ok(true) = event::poll(std::time::Duration::from_millis(100)) {
