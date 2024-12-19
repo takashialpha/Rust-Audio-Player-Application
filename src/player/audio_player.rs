@@ -27,9 +27,10 @@ impl AudioPlayer {
     }
 
     pub fn play_file(&mut self, path: PathBuf) -> Result<(), AudioPlayerError> {
-        self.current_file_name = path.file_stem()
-            .and_then(|os_str| os_str.to_os_string().into_string().ok())
-            .ok_or(AudioPlayerError::InvalidFileName)?;
+       self.current_file_name = path.file_stem()
+        .and_then(|os_str| os_str.to_os_string().into_string().ok())
+        .map(Some) // Envolva o valor em Some
+        .ok_or(AudioPlayerError::InvalidFileName)?;
 
         let file_bytes = fs::read(&path).map_err(AudioPlayerError::IoError)?;
 

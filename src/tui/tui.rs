@@ -2,7 +2,7 @@ use ratatui::{
     backend::CrosstermBackend,
     widgets::{Block, Borders, Paragraph},
     layout::{Layout, Constraint, Direction},
-    terminal::Terminal,
+    Terminal,
 };
 
 use crossterm::{
@@ -36,7 +36,7 @@ impl Tui {
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
-                    .split(f.size());
+                    .split(f.area());
 
                 let block = Block::default().title("Audio Player").borders(Borders::ALL);
                 f.render_widget(block, chunks[0]);
