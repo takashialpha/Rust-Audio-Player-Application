@@ -1,7 +1,7 @@
-use cpal::{Device, SampleFormat, Stream, StreamConfig};
-use cpal::traits::{HostTrait, StreamTrait, DeviceTrait};
-use dasp_sample::{Sample, FromSample};
 use crate::error::error::AudioPlayerError;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{Device, SampleFormat, Stream, StreamConfig};
+use dasp_sample::{FromSample, Sample};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -22,12 +22,14 @@ impl StreamHandler {
         let host = cpal::default_host();
         let device = host
             .default_output_device()
-            .ok_or(AudioPlayerError::StreamError("No output device available".to_string()))?;
-        
+            .ok_or(AudioPlayerError::StreamError(
+                "No output device available".to_string(),
+            ))?;
+
         let supported_config = device
             .default_output_config()
             .map_err(|_| AudioPlayerError::StreamError("Error querying configs".to_string()))?;
-        
+
         let config = supported_config.config();
         let total_samples = samples.len();
         let cursor = Arc::new(AtomicUsize::new(0));
@@ -37,10 +39,16 @@ impl StreamHandler {
             SampleFormat::I16 => build_stream::<T, i16>(device, config, samples, stream_cursor),
             SampleFormat::U8 => build_stream::<T, u8>(device, config, samples, stream_cursor),
             SampleFormat::F32 => build_stream::<T, f32>(device, config, samples, stream_cursor),
-            _ => return Err(AudioPlayerError::StreamError("Unsupported sample format".to_string())),
+            _ => {
+                return Err(AudioPlayerError::StreamError(
+                    "Unsupported sample format".to_string(),
+                ))
+            }
         }?;
 
-        stream.play().map_err(|_| AudioPlayerError::StreamError("Failed to start the stream".to_string()))?;
+        stream
+            .play()
+            .map_err(|_| AudioPlayerError::StreamError("Failed to start the stream".to_string()))?;
 
         Ok(Self {
             stream,
@@ -84,7 +92,7 @@ where
     O: cpal::Sample + cpal::SizedSample + Sample + FromSample<T>,
 {
     let err_fn = |err| eprintln!("Error on audio stream: {}", err);
-    
+
     let write_output = move |data: &mut [O], _: &cpal::OutputCallbackInfo| {
         for sample in data.iter_mut() {
             let index = cursor.fetch_add(1, Ordering::Relaxed);

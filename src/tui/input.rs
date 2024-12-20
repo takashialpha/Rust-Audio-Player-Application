@@ -14,4 +14,3 @@ pub fn capture_input() -> Option<KeyEvent> {
         None
     }
 }
-

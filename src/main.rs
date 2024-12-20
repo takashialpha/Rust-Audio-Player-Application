@@ -1,15 +1,15 @@
+mod error;
 mod player;
 mod tui;
-mod error;
 
 use player::audio_player::AudioPlayer;
-use tui::tui::Tui;
 use std::path::PathBuf;
+use tui::tui::Tui;
 
 fn main() {
     let mut player = AudioPlayer::new();
 
-    let path = PathBuf::from("path/to/your/audio.wav");
+    let path = PathBuf::from("/home/takashi/Downloads/sound.wav");
     if let Err(e) = player.play_file(path) {
         eprintln!("Error playing file: {}", e);
     }
@@ -19,4 +19,3 @@ fn main() {
         eprintln!("Error running the TUI: {}", e);
     }
 }
-

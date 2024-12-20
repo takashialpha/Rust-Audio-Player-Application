@@ -1,13 +1,14 @@
 use ratatui::{
     backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
-    layout::{Layout, Constraint, Direction},
     Terminal,
 };
 
 use crossterm::{
+    cursor,
     event::{self, Event, KeyCode, KeyEvent},
-    cursor, execute,
+    execute,
 };
 
 use std::io;
@@ -63,4 +64,3 @@ impl Tui {
         Ok(())
     }
 }
-

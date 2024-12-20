@@ -1,5 +1,5 @@
-use std::io;
 use std::fmt;
+use std::io;
 
 #[derive(Debug)]
 pub enum AudioPlayerError {
@@ -25,4 +25,3 @@ impl From<io::Error> for AudioPlayerError {
         AudioPlayerError::IoError(err)
     }
 }
-
