@@ -7,6 +7,10 @@ pub enum AudioPlayerError {
     UnsupportedFileFormat,
     InvalidFileName,
     StreamError(String),
+    DirectoryAlreadyExists,
+    NoFileSelected,
+    FileAlreadyExists,
+    FailedToSelectFile,
 }
 
 impl fmt::Display for AudioPlayerError {
@@ -16,6 +20,12 @@ impl fmt::Display for AudioPlayerError {
             AudioPlayerError::UnsupportedFileFormat => write!(f, "Unsupported file format"),
             AudioPlayerError::InvalidFileName => write!(f, "Invalid file name"),
             AudioPlayerError::StreamError(ref msg) => write!(f, "Stream Error: {}", msg),
+            AudioPlayerError::DirectoryAlreadyExists => {
+                write!(f, "Error: Directory already exists")
+            }
+            AudioPlayerError::NoFileSelected => write!(f, "Error: No file selected"),
+            AudioPlayerError::FileAlreadyExists => write!(f, "Error: File already exists"),
+            AudioPlayerError::FailedToSelectFile => write!(f, "Error: Failed to select file"),
         }
     }
 }

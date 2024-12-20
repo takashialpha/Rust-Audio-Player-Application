@@ -2,7 +2,8 @@
 
 # Audium - TUI Audio Player
 
-Audium is a fork of the **Rust-Audio-Player-Application**, built with a text user interface (TUI) using the Rust programming language. The application provides basic audio player functionality, but with a terminal-based user experience.
+Audium is a fork of the **Rust-Audio-Player-Application**, built with a terminal user interface (TUI) using the Rust programming language. The application provides basic audio player functionality, but with a terminal-based user experience.
+
 
 ## Features
 
