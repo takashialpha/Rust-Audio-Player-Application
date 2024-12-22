@@ -1,10 +1,8 @@
 use crate::error::error::AudioPlayerError;
 use crate::fstools::cache;
-use crate::fstools::cache::Cache;
 use std::fs::{self, File};
-use std::io::{self, Write};
-use std::path::Path;
-use std::process::{Command, exit};
+use std::io;
+use std::process::Command;
 
 pub struct SelectFile {
     pub file_path: String,
@@ -12,51 +10,41 @@ pub struct SelectFile {
 
 impl SelectFile {
     pub fn new() -> Result<SelectFile, AudioPlayerError> {
-        match cache::Cache::init() {
-            Ok(cache) => {
-                let cache_dir = &cache.cache_dir;
-                let final_txt_dir = format!("{}/input_ranger_file.txt", cache_dir);
-                match File::create(final_txt_dir.clone()) {
-                    Ok(_) => Ok(SelectFile {
-                        file_path: final_txt_dir,
-                    }),
-                    Err(e) => Err(AudioPlayerError::IoError(e)),
-                }
-            }
-            Err(e) => Err(e),
-        }
+        let cache = cache::Cache::init()?;
+        let cache_dir = &cache.cache_dir;
+        let final_txt_dir = format!("{}/input_ranger_file.txt", cache_dir);
+        File::create(&final_txt_dir).map_err(AudioPlayerError::IoError)?;
+        Ok(SelectFile {
+            file_path: final_txt_dir,
+        })
     }
 
     fn clear_file(&mut self) -> io::Result<()> {
-        let mut file = File::create(&self.file_path)?;
+        let file = File::create(&self.file_path)?;
         file.set_len(0)?;
         Ok(())
     }
 
-    pub fn get_file(&mut self) -> Result<SelectFile, AudioPlayerError> {
-        let output = Command::new("ranger")
-            .arg("-c")
+    pub fn get_file(&mut self) -> Result<(), AudioPlayerError> {
+        let status = Command::new("ranger")
             .arg("--choosefile")
-            .arg(self.file_path.clone())
-            .arg("--selectfile")
-            .arg("~/")
-            .output()
-            .map_err(|e| AudioPlayerError::IoError(e))?;
+            .arg(&self.file_path)
+            .status()
+            .map_err(AudioPlayerError::IoError)?;
 
-        if !output.status.success() {
+        if !status.success() {
             return Err(AudioPlayerError::FailedToSelectFile);
         }
+
+        self.file_path = fs::read_to_string(&self.file_path)
+            .map_err(AudioPlayerError::IoError)?
+            .trim()
+            .to_string();
 
         if self.file_path.is_empty() {
             return Err(AudioPlayerError::NoFileSelected);
         }
 
-        self.file_path = fs::read_to_string(&self.file_path)
-            .map_err(|e| AudioPlayerError::IoError(e))?;
-
-        Ok(SelectFile {
-            file_path: self.file_path.clone(),
-        })
+        Ok(())
     }
 }
-

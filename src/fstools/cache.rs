@@ -1,6 +1,5 @@
 use crate::error::error::AudioPlayerError;
 use std::fs;
-use std::io;
 use std::path::Path;
 use std::process;
 
@@ -12,7 +11,7 @@ pub struct Cache {
 impl Cache {
     pub fn init() -> Result<Cache, AudioPlayerError> {
         let pid = process::id();
-        let cache_dir = format!("/tmp/{}", pid);
+        let cache_dir = format!("/tmp/audium-{}", pid);
         let path = Path::new(&cache_dir);
 
         if path.exists() {
@@ -25,7 +24,7 @@ impl Cache {
         }
     }
 
-    pub fn cleanup_tmp(&self) -> Result<(), AudioPlayerError> {
+    pub fn clean(&self) -> Result<(), AudioPlayerError> {
         match fs::remove_dir_all(&self.cache_dir) {
             Ok(_) => Ok(()),
             Err(e) => Err(AudioPlayerError::IoError(e)),
