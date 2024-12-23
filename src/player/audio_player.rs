@@ -84,6 +84,5 @@ impl AudioPlayer {
         if let Some(stream_handler) = &self.stream_handler {
             let _ = stream_handler.restart();
         }
-        self.state = State::WaitingForFile; // initial state
     }
 }
