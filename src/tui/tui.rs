@@ -2,17 +2,15 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
-    text::{Text},
+    text::Text,
     Terminal,
 };
-
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent},
     execute,
     terminal,
 };
-
 use std::io;
 
 use crate::player::audio_player::AudioPlayer;
@@ -31,23 +29,12 @@ impl Tui {
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
 
-        terminal::enable_raw_mode()?;
-        execute!(terminal.backend_mut(), cursor::Hide)?;
-
-        terminal.clear()?;
-        execute!(terminal.backend_mut(), terminal::Clear(terminal::ClearType::Purge))?;
+        self.setup_terminal(&mut terminal)?;
 
         loop {
             terminal.draw(|f| {
                 let area = f.area();
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints([
-                        Constraint::Percentage(60),
-                        Constraint::Percentage(20),
-                        Constraint::Percentage(20),
-                    ])
-                    .split(area);
+                let chunks = self.layout_chunks(area);
 
                 self.render_player(f, chunks[0]);
                 self.render_controls(f, chunks[1]);
@@ -61,25 +48,48 @@ impl Tui {
             }
         }
 
+        self.cleanup_terminal(&mut terminal)?;
+
+        Ok(())
+    }
+
+    fn setup_terminal(&self, terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>) -> io::Result<()> {
+        terminal::enable_raw_mode()?;
+        execute!(terminal.backend_mut(), cursor::Hide)?;
         terminal.clear()?;
         execute!(terminal.backend_mut(), terminal::Clear(terminal::ClearType::Purge))?;
+        Ok(())
+    }
 
+    fn cleanup_terminal(&self, terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>) -> io::Result<()> {
+        terminal.clear()?;
+        execute!(terminal.backend_mut(), terminal::Clear(terminal::ClearType::Purge))?;
         terminal::disable_raw_mode()?;
         execute!(terminal.backend_mut(), cursor::Show)?;
         Ok(())
     }
 
+    fn layout_chunks(&self, area: ratatui::layout::Rect) -> Vec<ratatui::layout::Rect> {
+        Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage(60),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+            ])
+            .split(area)
+            .to_vec()  // Convert Rc<[Rect]> to Vec<Rect>
+    }
+
     fn render_player(&self, f: &mut ratatui::Frame, area: ratatui::layout::Rect) {
-        let block = Block::default()
-            .title("Audio Player")
-            .borders(Borders::ALL);
+        let block = self.default_block("Audio Player");
         f.render_widget(block, area);
     }
 
     fn render_controls(&self, f: &mut ratatui::Frame, area: ratatui::layout::Rect) {
         let play_pause_button = self.player.pause_or_play_button_text();
         let paragraph = Paragraph::new(play_pause_button)
-            .block(Block::default().title("Control").borders(Borders::ALL));
+            .block(self.default_block("Control"));
         f.render_widget(paragraph, area);
     }
 
@@ -91,7 +101,7 @@ impl Tui {
         ];
         let controls_text = Text::from(controls.join("\n"));
         let shortcuts = Paragraph::new(controls_text)
-            .block(Block::default().title("Keyboard Shortcuts").borders(Borders::ALL));
+            .block(self.default_block("Keyboard Shortcuts"));
         f.render_widget(shortcuts, area);
     }
 
@@ -109,6 +119,10 @@ impl Tui {
             }
             _ => Ok(false),
         }
+    }
+
+    fn default_block(&self, title: &str) -> Block {
+        Block::default().title(title.to_string()).borders(Borders::ALL)  // Convert &str to String
     }
 }
 
