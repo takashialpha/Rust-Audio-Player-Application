@@ -34,7 +34,8 @@ impl Tui {
         terminal::enable_raw_mode()?;
         execute!(terminal.backend_mut(), cursor::Hide)?;
 
-        terminal.clear()?; // Clear the screen to avoid old content
+        terminal.clear()?;
+        execute!(terminal.backend_mut(), terminal::Clear(terminal::ClearType::Purge))?;
 
         loop {
             terminal.draw(|f| {
@@ -60,10 +61,11 @@ impl Tui {
             }
         }
 
-        terminal.clear()?; // Clear screen again to remove any residual content
+        terminal.clear()?;
+        execute!(terminal.backend_mut(), terminal::Clear(terminal::ClearType::Purge))?;
 
-        terminal::disable_raw_mode()?; // Disable raw mode
-        execute!(terminal.backend_mut(), cursor::Show)?; // Show the cursor again
+        terminal::disable_raw_mode()?;
+        execute!(terminal.backend_mut(), cursor::Show)?;
         Ok(())
     }
 
