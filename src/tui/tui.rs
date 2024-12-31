@@ -1,7 +1,7 @@
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Gauge},
     text::Text,
     Terminal,
 };
@@ -11,7 +11,7 @@ use crossterm::{
     execute,
     terminal,
 };
-use std::io;
+use std::{io, thread, time::Duration};
 
 use crate::player::audio_player::AudioPlayer;
 
@@ -40,6 +40,9 @@ impl Tui {
                 self.render_controls(f, chunks[1]);
                 self.render_shortcuts(f, chunks[2]);
             })?;
+
+            // Sleep for a short duration to continuously update the progress bar
+            thread::sleep(Duration::from_millis(100));
 
             if let Event::Key(KeyEvent { code, .. }) = event::read()? {
                 if self.handle_input(code)? {
@@ -84,6 +87,27 @@ impl Tui {
     fn render_player(&self, f: &mut ratatui::Frame, area: ratatui::layout::Rect) {
         let block = self.default_block("Audio Player");
         f.render_widget(block, area);
+
+        // Call the method to render the progress bar
+        self.render_progress_bar(f, area);
+    }
+
+    fn render_progress_bar(&self, f: &mut ratatui::Frame, area: ratatui::layout::Rect) {
+        let progress = self.player.progress();
+        let gauge = Gauge::default()
+            .gauge_style(
+                ratatui::style::Style::default().fg(ratatui::style::Color::Green)
+            )
+            .percent((progress * 100.0) as u16);
+
+        // Set the gauge to a smaller area within the Audio Player block
+        let progress_area = ratatui::layout::Rect {
+            x: area.x + 1,
+            y: area.y + 2,
+            width: area.width - 2,
+            height: 1,
+        };
+        f.render_widget(gauge, progress_area);
     }
 
     fn render_controls(&self, f: &mut ratatui::Frame, area: ratatui::layout::Rect) {
