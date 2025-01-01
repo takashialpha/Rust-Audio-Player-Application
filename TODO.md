@@ -5,6 +5,7 @@
 - [ ] Remove warnings in the code.
 - [ ] Remove unused and dead code.
 - [ ] Fix the issue where the progress bar only update when play/pause/reboot, (not at real time).
+- [ ] Fix the issue where panics when passes 100% of the song.
 
 ## Features
 - [ ] Add support to automatically clean up temporary files at the end of execution.
@@ -12,7 +13,7 @@
 - [x] Improve TUI, adding progress bars, more features, and lock scrolling.
 - [ ] Show file name, song duration in seconds (features in this scope).
 - [ ] Integrate [Clap](https://docs.rs/clap/latest/clap/) for parsing external arguments.
-- [ ] Add support for playing MP3 files.
+- [x] Add support for playing MP3 files.
 - [ ] Optimize the code in the `fstools` module.
 - [ ] Improve the readability and maintainability of `fstools`.
 - [ ] Add content to the `debug` module to support testing.
